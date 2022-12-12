@@ -29,7 +29,7 @@ public abstract class BaseBlock : MonoBehaviour
         Node.OccupiedBlock = this;
     }
 
-    public void MergeBlock(BaseBlock blockToMergeWith)
+    public virtual void MergeBlock(BaseBlock blockToMergeWith)
     {
         // Set the block we are merging with
         MergingBlock = blockToMergeWith;
@@ -37,7 +37,6 @@ public abstract class BaseBlock : MonoBehaviour
         // Set current node as unoccupied to allow blocks to use it
         Node.OccupiedBlock = null;
 
-        //
         blockToMergeWith.Merging = true;
     }
 

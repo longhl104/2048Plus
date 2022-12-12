@@ -295,7 +295,7 @@ public class GameManager : SwipeDetection
                 RemoveBlock(baseBlock);
                 RemoveBlock(mergingBlock);
             }
-            else
+            else // Destroy all surrouding blocks 
             {
                 RemoveBlock(mergingBlock);
                 ExplosiveBlock eb = (ExplosiveBlock)baseBlock;
@@ -324,7 +324,12 @@ public class GameManager : SwipeDetection
     void RemoveBlock(BaseBlock block)
     {
         _blocks.Remove(block);
-        Destroy(block.gameObject);
+        if (block is Block b)
+        {
+            StartCoroutine(b.Destroy());
+        }
+        else
+            Destroy(block.gameObject);
     }
 
     Node GetNodeAtPosition(Vector2 pos)
