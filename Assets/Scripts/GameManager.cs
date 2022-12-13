@@ -6,6 +6,7 @@ using UnityEngine;
 using DG.Tweening;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameManager : SwipeDetection
 {
@@ -365,6 +366,11 @@ public class GameManager : SwipeDetection
         }
 
         ChangeState(GameState.GenerateLevel);
+    }
+
+    public void LoadMainMenuScene()
+    {
+        SceneManager.LoadScene("MainMenu");
     }
 }
 
