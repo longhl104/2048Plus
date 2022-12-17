@@ -7,6 +7,8 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Assets.Scripts.Utils;
+using Assets.Scripts;
 
 public class GameManager : SwipeDetection
 {
@@ -33,6 +35,7 @@ public class GameManager : SwipeDetection
     private const string HIGH_SCORE_KEY = "highScore";
 
     private BlockType GetBlockTypeByValue(int value) => _types.First(t => t.Value == value);
+    private Board _board;
 
     void Start()
     {
@@ -121,7 +124,6 @@ public class GameManager : SwipeDetection
         _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(HIGH_SCORE_KEY);
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         _restartButton.SetActive(false);
-        SetScore(0);
         _round = 0;
         _nodes = new List<Node>();
         _blocks = new List<BaseBlock>();
@@ -174,9 +176,28 @@ public class GameManager : SwipeDetection
         {
             if (_round++ == 0)
             {
-                SpawnBlock(freeNodes.First(), UnityEngine.Random.value > 0.75f ? 4 : 2, _blockPrefab);
-                if (freeNodes.Count() > 1)
-                    SpawnBlock(freeNodes.Skip(1).First(), _explosiveValue, _explosiveBlockPrefab);
+                _board = (Board)StorageHandler.LoadData(StorageKeys.BOARD);
+                if (_board == null)
+                {
+                    SetScore(0);
+                    int normalBlockValue = UnityEngine.Random.value > 0.75f ? 4 : 2;
+                    var freeNode = freeNodes.First();
+                    SpawnBlock(freeNode, normalBlockValue, _blockPrefab);
+
+                    if (freeNodes.Count() > 1)
+                    {
+                        freeNode = freeNodes.Skip(1).First();
+                        SpawnBlock(freeNode, _explosiveValue, _explosiveBlockPrefab);
+                    }
+                }
+                else
+                {
+                    SetScore(_board.Score);
+                    foreach (var block in _board.Blocks)
+                    {
+                        SpawnBlock(_nodes.First(n => (int)n.Pos.x == block.X && (int)n.Pos.y == block.Y), block.Value, block.IsExplosive ? _explosiveBlockPrefab : _blockPrefab);
+                    }
+                }
             }
             else
             {
@@ -368,8 +389,22 @@ public class GameManager : SwipeDetection
         ChangeState(GameState.GenerateLevel);
     }
 
-    public void LoadMainMenuScene()
+    public void OnBackButtonClicked()
     {
+        _board = new Board();
+        _board.Score = _score;
+        foreach(var block in _blocks)
+        {
+            _board.Blocks.Add(new Board.Block()
+            {
+                X = (int)block.Pos.x,
+                Y = (int)block.Pos.y,
+                Value = block.Value,
+                IsExplosive = block is ExplosiveBlock,
+            }) ;
+        }
+
+        StorageHandler.SaveData(_board, StorageKeys.BOARD);
         SceneManager.LoadScene("MainMenu");
     }
 }
@@ -390,4 +425,21 @@ public enum GameState
     Moving,
     Win,
     Lose,
+}
+
+[Serializable]
+public class Board
+{
+    [Serializable]
+    public class Block
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Value { get; set; }
+        public bool IsExplosive { get; set; }
+    }
+
+    public List<Block> Blocks { get; set; } = new List<Block>();
+
+    public int Score { get; set; }
 }
