@@ -14,6 +14,8 @@ namespace Assets.Scripts
         }
 
         public static string
-            BOARD = GetString("board");
+            BOARD = GetString("board"),
+            MUSIC_VOLUME = GetString("music_volume")
+            ;
     }
 }

@@ -166,6 +166,27 @@ public class GameManager : SwipeDetection
         return _nodes.Where(n => n.OccupiedBlock == null).OrderBy(x => UnityEngine.Random.value);
     }
 
+    private bool IsBoardValid()
+    {
+        if (_board == null)
+            return false;
+
+        if (_board.Blocks.Count > 0
+            && _board.ExplosiveValue >= 2 && IsPowerOfTwo(_board.ExplosiveValue)
+            )
+        {
+            return true;
+        }
+
+        StorageHandler.DeleteData(StorageKeys.BOARD);
+        return false;
+
+        static bool IsPowerOfTwo(int x)
+        {
+            return (x & (x - 1)) == 0;
+        }
+    }
+
     private void SpawnBlocks()
     {
         var freeNodes = GetFreeNodes();
@@ -174,7 +195,7 @@ public class GameManager : SwipeDetection
             if (_round++ == 0)
             {
                 _board = (Board)StorageHandler.LoadData(StorageKeys.BOARD);
-                if (_board == null)
+                if (!IsBoardValid())
                 {
                     _board = new Board();
                     SetScore(0);
@@ -385,20 +406,25 @@ public class GameManager : SwipeDetection
             RemoveBlock(_blocks.First());
         }
 
+        StorageHandler.DeleteData(StorageKeys.BOARD);
         ChangeState(GameState.GenerateLevel);
     }
 
     public void OnBackButtonClicked()
     {
-        _board.Blocks = _blocks.Select(block => new Board.Block()
+        if (_board != null)
         {
-            X = (int)block.Pos.x,
-            Y = (int)block.Pos.y,
-            Value = block.Value,
-            IsExplosive = block is ExplosiveBlock,
-        }).ToList();
+            _board.Blocks = _blocks.Select(block => new Board.Block()
+            {
+                X = (int)block.Pos.x,
+                Y = (int)block.Pos.y,
+                Value = block.Value,
+                IsExplosive = block is ExplosiveBlock,
+            }).ToList();
 
-        StorageHandler.SaveData(_board, StorageKeys.BOARD);
+            StorageHandler.SaveData(_board, StorageKeys.BOARD);
+        }
+
         SceneManager.LoadScene("MainMenu");
     }
 }

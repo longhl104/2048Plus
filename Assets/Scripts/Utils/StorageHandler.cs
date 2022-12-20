@@ -41,17 +41,38 @@ namespace Assets.Scripts.Utils
             // Check if our file exists, if it does not, just return a null object.
             if (File.Exists(FullFilePath))
             {
-                BinaryFormatter Formatter = new BinaryFormatter();
-                FileStream fileStream = new(FullFilePath, FileMode.Open);
-                object obj = Formatter.Deserialize(fileStream);
-                fileStream.Close();
-                // Return the uncast untyped object.
-                return obj;
+                try
+                {
+                    BinaryFormatter Formatter = new BinaryFormatter();
+                    FileStream fileStream = new(FullFilePath, FileMode.Open);
+                    object obj = Formatter.Deserialize(fileStream);
+                    fileStream.Close();
+                    // Return the uncast untyped object.
+                    return obj;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
             else
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Serialize an object to the devices File System.
+        /// </summary>
+        /// <param name="objectToSave">The Object that will be Serialized.</param>
+        /// <param name="fileName">Name of the file to be Serialized.</param>
+        public static void DeleteData(string fileName)
+        {
+            // Add the File Path together with the files name and extension.
+            // We will use .bin to represent that this is a Binary file.
+            string FullFilePath = Application.persistentDataPath + "/" + fileName + ".bin";
+            // We must create a new Formattwr to Serialize with.
+            File.Delete(FullFilePath);
         }
     }
 }
