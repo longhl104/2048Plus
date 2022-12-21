@@ -480,12 +480,12 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Developers: Long N.
+  m_text: 'Developers: Long Nguyen
 
-    Icons: flaticon
+    Icons: Flaticon
 
     Sound: Dustyroom Casual
-    Game Sound'
+    Game Sound, Mixkit'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2f225d892b7b6a245a2323d9f483a676, type: 2}
   m_sharedMaterial: {fileID: -1267300168431527644, guid: 2f225d892b7b6a245a2323d9f483a676, type: 2}
@@ -512,7 +512,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 56
+  m_fontSize: 54.25
   m_fontSizeBase: 55
   m_fontWeight: 400
   m_enableAutoSizing: 1

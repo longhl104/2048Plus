@@ -26,6 +26,8 @@ public class GameManager : SwipeDetection
     [SerializeField] private GameObject _gamePanel;
     [SerializeField] private GameObject _restartButton;
     [SerializeField] private GameObject _cheeringText;
+    [SerializeField] private AudioSource _gameOverSound;
+    [SerializeField] private AudioSource _explosiveSound;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -134,6 +136,7 @@ public class GameManager : SwipeDetection
 
     private void ShowGameOver()
     {
+        _gameOverSound.Play();
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.75f);
         _restartButton.SetActive(true);
     }
@@ -400,9 +403,11 @@ public class GameManager : SwipeDetection
             }
             else // Destroy all surrouding blocks 
             {
+                _explosiveSound.Play();
                 RemoveBlock(mergingBlock);
                 ExplosiveBlock eb = (ExplosiveBlock)baseBlock;
-                eb.ExploseAction = () =>
+                ChangeState(GameState.Explosing);
+                eb.TriggerExplosion(() =>
                 {
                     PlayCheeringText(true);
                     var totalScore = 0;
@@ -417,10 +422,7 @@ public class GameManager : SwipeDetection
                     SetScore(_board.Score + totalScore);
                     RemoveBlock(baseBlock);
                     ChangeState(GameState.SpawningBlocks);
-                };
-
-                ChangeState(GameState.Explosing);
-                eb.TriggerExplosion();
+                });
             }
         }
     }
