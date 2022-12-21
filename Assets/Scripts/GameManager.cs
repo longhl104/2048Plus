@@ -25,19 +25,77 @@ public class GameManager : SwipeDetection
     [SerializeField] private TextMeshProUGUI _highScoreText;
     [SerializeField] private GameObject _gamePanel;
     [SerializeField] private GameObject _restartButton;
+    [SerializeField] private GameObject _cheeringText;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
     private GameState _state;
     private int _round;
-    private const string HIGH_SCORE_KEY = "highScore";
-
     private BlockType GetBlockTypeByValue(int value) => _types.First(t => t.Value == value);
     private Board _board;
+    private bool _isCheeringTextPlaying = false;
+    private readonly string[] _cheeringWords = new string[] {
+        "Nice!",
+        "Amazing!",
+        "Good Job!",
+        "Brilliant!",
+        "Fabulous!",
+        "Fantastic!",
+        "Great!",
+        "Impressive!",
+        "Marvellous!",
+        "Outstanding!",
+        "Superb!",
+        "Smahsing!",
+        "Terrific!",
+        "Wonderful!"
+    };
+
+    private readonly string[] _explosingWords = new string[] {
+        "BOOM!",
+        "BANG!",
+    };
 
     void Start()
     {
         ChangeState(GameState.GenerateLevel);
+    }
+
+    private void PlayCheeringText(bool isExplosive)
+    {
+        if (!_isCheeringTextPlaying)
+        {
+            _isCheeringTextPlaying = true;
+            float duration = 0.7f;
+            string text;
+            if (isExplosive)
+                text = _explosingWords.OrderBy(x => UnityEngine.Random.value).First();
+            else
+                text = _cheeringWords.OrderBy(x => UnityEngine.Random.value).First();
+
+            _cheeringText.GetComponentInChildren<TextMeshPro>().SetText(text);
+            var textObject = Instantiate(_cheeringText, new Vector2(1.5f, 1.5f), Quaternion.identity);
+
+            var sequence = DOTween.Sequence();
+            if (!isExplosive)
+            {
+                sequence.Append(textObject.transform.DOMove(new Vector2(1.5f, 4f), duration));
+                sequence.Join(textObject.transform.DOScale(new Vector2(4.5f, 4.5f), duration));
+                sequence.Append(textObject.transform.DOShakeScale(1));
+            }
+            else
+            {
+                sequence.Append(textObject.transform.DOScale(new Vector2(4.5f, 4.5f), 0.1f));
+                sequence.Join(textObject.transform.DOMove(new Vector2(1.5f, 4f), 0.1f));
+                sequence.Append(textObject.transform.DOShakeScale(duration));
+            }
+
+            sequence.OnComplete(() =>
+            {
+                Destroy(textObject);
+                _isCheeringTextPlaying = false;
+            });
+        }
     }
 
     private void ChangeState(GameState newState)
@@ -104,21 +162,21 @@ public class GameManager : SwipeDetection
     {
         _board.Score = score;
         _scoreText.text = "Score: " + _board.Score;
-        if (!PlayerPrefs.HasKey(HIGH_SCORE_KEY))
+        if (!PlayerPrefs.HasKey(StorageKeys.HIGH_SCORE))
         {
-            PlayerPrefs.SetInt(HIGH_SCORE_KEY, score);
+            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, score);
         }
 
-        if (_board.Score > PlayerPrefs.GetInt(HIGH_SCORE_KEY))
+        if (_board.Score > PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE))
         {
-            PlayerPrefs.SetInt(HIGH_SCORE_KEY, _board.Score);
+            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, _board.Score);
             _highScoreText.text = "High Score: " + _board.Score;
         }
     }
 
     private void GenerateGrid()
     {
-        _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(HIGH_SCORE_KEY);
+        _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE);
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         _restartButton.SetActive(false);
         _round = 0;
@@ -155,9 +213,7 @@ public class GameManager : SwipeDetection
         var center = new Vector2((float)_width / 2 - 0.5f, (float)_height / 2 - 0.5f);
         var board = Instantiate(_boardPrefab, center, Quaternion.identity);
         board.size = new Vector2(_width, _height);
-
         Camera.main.transform.position = new Vector3(center.x, center.y, -10);
-
         ChangeState(GameState.SpawningBlocks);
     }
 
@@ -190,6 +246,7 @@ public class GameManager : SwipeDetection
     private void SpawnBlocks()
     {
         var freeNodes = GetFreeNodes();
+        int normalBlockValue = UnityEngine.Random.value > 0.75f ? 4 : 2;
         if (freeNodes.Count() > 0)
         {
             if (_round++ == 0)
@@ -200,14 +257,12 @@ public class GameManager : SwipeDetection
                     _board = new Board();
                     SetScore(0);
                     _board.ExplosiveValue = 2;
-                    int normalBlockValue = UnityEngine.Random.value > 0.75f ? 4 : 2;
                     var freeNode = freeNodes.First();
                     SpawnBlock(freeNode, normalBlockValue, _blockPrefab);
 
                     if (freeNodes.Count() > 1)
                     {
-                        freeNode = freeNodes.Skip(1).First();
-                        SpawnBlock(freeNode, _board.ExplosiveValue, _explosiveBlockPrefab);
+                        SpawnBlock(freeNodes.Skip(1).First(), _board.ExplosiveValue, _explosiveBlockPrefab);
                     }
                 }
                 else
@@ -221,7 +276,7 @@ public class GameManager : SwipeDetection
             }
             else
             {
-                SpawnBlock(freeNodes.First(), UnityEngine.Random.value > 0.75f ? 4 : 2, _blockPrefab);
+                SpawnBlock(freeNodes.First(), normalBlockValue, _blockPrefab);
                 if (freeNodes.Count() > 1 && _blocks.All(b => b is Block))
                 {
                     _board.ExplosiveValue *= 2;
@@ -268,9 +323,15 @@ public class GameManager : SwipeDetection
             return;
 
         ChangeState(GameState.Moving);
-        var orderedBlocks = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y).ToList();
-        if (dir == Vector2.right || dir == Vector2.up)
-            orderedBlocks.Reverse();
+        IEnumerable<BaseBlock> orderedBlocks;
+        if (dir == Vector2.up)
+            orderedBlocks = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => -b.Pos.y);
+        else if (dir == Vector2.down)
+            orderedBlocks = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y);
+        else if (dir == Vector2.left)
+            orderedBlocks = _blocks.OrderBy(b => b.Pos.y).ThenBy(b => b.Pos.x);
+        else // dir == Vector2.right
+            orderedBlocks = _blocks.OrderBy(b => b.Pos.y).ThenBy(b => -b.Pos.x);
 
         var hasMovedBlocks = false;
         foreach (var block in orderedBlocks)
@@ -300,7 +361,6 @@ public class GameManager : SwipeDetection
         }
 
         var sequence = DOTween.Sequence();
-
         foreach (var block in orderedBlocks)
         {
             var movePoint = block.MergingBlock != null ? block.MergingBlock.Node.Pos : block.Node.Pos;
@@ -330,6 +390,7 @@ public class GameManager : SwipeDetection
         }
         else
         {
+            PlayCheeringText(false);
             if (baseBlock.Value / 2 > 1)
             {
                 SetScore(_board.Score + baseBlock.Value * 2);
@@ -343,6 +404,7 @@ public class GameManager : SwipeDetection
                 ExplosiveBlock eb = (ExplosiveBlock)baseBlock;
                 eb.ExploseAction = () =>
                 {
+                    PlayCheeringText(true);
                     var totalScore = 0;
                     foreach (var node in _nodes.Where(n => n.OccupiedBlock != null
                          && Math.Max(Math.Abs(n.Pos.x - baseBlock.Pos.x), Math.Abs(n.Pos.y - baseBlock.Pos.y)) <= 1

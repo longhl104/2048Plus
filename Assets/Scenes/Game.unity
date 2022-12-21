@@ -336,6 +336,7 @@ MonoBehaviour:
   _highScoreText: {fileID: 1532744813}
   _gamePanel: {fileID: 1963206268}
   _restartButton: {fileID: 2030619648}
+  _cheeringText: {fileID: 2193193416290760154, guid: 7ef7f8878c9e21640bf821a05da89cab, type: 3}
 --- !u!4 &317003818
 Transform:
   m_ObjectHideFlags: 0
@@ -971,17 +972,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2973156103267285965, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
   m_PrefabInstance: {fileID: 2973156103492913895}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2004693291 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3395483706883824565, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
-  m_PrefabInstance: {fileID: 2973156103492913895}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ee18497288027544a5fd374ec1de42e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2030619648
 GameObject:
   m_ObjectHideFlags: 0
@@ -1126,10 +1116,14 @@ PrefabInstance:
     - target: {fileID: 2973156103267285964, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 2004693291}
+      objectReference: {fileID: 317003817}
     - target: {fileID: 2973156103267285964, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: Change
+      value: OnBackButtonClicked
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973156103267285964, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: GameManager, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2973156103267285965, guid: b6998de88a6608f449cba0942766c3a7, type: 3}
       propertyPath: m_Pivot.x

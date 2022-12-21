@@ -485,7 +485,7 @@ MonoBehaviour:
     Icons: flaticon
 
     Sound: Dustyroom Casual
-    Game Sound - One Shot SFX Pack'
+    Game Sound'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2f225d892b7b6a245a2323d9f483a676, type: 2}
   m_sharedMaterial: {fileID: -1267300168431527644, guid: 2f225d892b7b6a245a2323d9f483a676, type: 2}
@@ -512,7 +512,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 44.6
+  m_fontSize: 56
   m_fontSizeBase: 55
   m_fontWeight: 400
   m_enableAutoSizing: 1
