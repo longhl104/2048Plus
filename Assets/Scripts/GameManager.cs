@@ -323,15 +323,15 @@ public class GameManager : SwipeDetection
             return;
 
         ChangeState(GameState.Moving);
-        IEnumerable<BaseBlock> orderedBlocks;
+        IEnumerable<BaseBlock> orderedBlocks = _blocks.Where(b => b is Block);
         if (dir == Vector2.up)
-            orderedBlocks = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => -b.Pos.y);
+            orderedBlocks = orderedBlocks.OrderBy(b => b.Pos.x).ThenBy(b => -b.Pos.y);
         else if (dir == Vector2.down)
-            orderedBlocks = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y);
+            orderedBlocks = orderedBlocks.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y);
         else if (dir == Vector2.left)
-            orderedBlocks = _blocks.OrderBy(b => b.Pos.y).ThenBy(b => b.Pos.x);
+            orderedBlocks = orderedBlocks.OrderBy(b => b.Pos.y).ThenBy(b => b.Pos.x);
         else // dir == Vector2.right
-            orderedBlocks = _blocks.OrderBy(b => b.Pos.y).ThenBy(b => -b.Pos.x);
+            orderedBlocks = orderedBlocks.OrderBy(b => b.Pos.y).ThenBy(b => -b.Pos.x);
 
         var hasMovedBlocks = false;
         foreach (var block in orderedBlocks)
