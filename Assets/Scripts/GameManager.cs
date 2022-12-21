@@ -435,7 +435,10 @@ public class GameManager : SwipeDetection
             StartCoroutine(b.Destroy());
         }
         else
-            Destroy(block.gameObject);
+        {
+            if (block.gameObject != null)
+                Destroy(block.gameObject);
+        }
     }
 
     Node GetNodeAtPosition(Vector2 pos)

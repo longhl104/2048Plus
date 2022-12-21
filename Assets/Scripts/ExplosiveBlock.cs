@@ -29,6 +29,7 @@ public class ExplosiveBlock : BaseBlock
             {
                 _sequence = DOTween.Sequence()
                     .Append(_renderer.transform.DOScale(new Vector2(3.5f, 3.5f), 0.5f))
+                    .Join(_renderer.transform.DOShakeRotation(0.5f, 45))
                     .OnComplete(onCompleteAction);
             });
     }
