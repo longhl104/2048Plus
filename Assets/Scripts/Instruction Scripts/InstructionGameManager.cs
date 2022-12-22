@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 using Assets.Scripts.Utils;
 using Assets.Scripts;
 
-public class GameManager : SwipeDetection
+public class InstructionGameManager : SwipeDetection
 {
     [SerializeField] private int _width = 4;
     [SerializeField] private int _height = 4;
@@ -20,14 +20,13 @@ public class GameManager : SwipeDetection
     [SerializeField] private SpriteRenderer _boardPrefab;
     [SerializeField] private List<BlockType> _types;
     [SerializeField] private float _travelTime = .2f;
-    [SerializeField] private bool _isTest = false;
-    [SerializeField] private TextMeshProUGUI _scoreText;
-    [SerializeField] private TextMeshProUGUI _highScoreText;
     [SerializeField] private GameObject _gamePanel;
     [SerializeField] private GameObject _restartButton;
     [SerializeField] private GameObject _cheeringText;
     [SerializeField] private AudioSource _gameOverSound;
     [SerializeField] private AudioSource _explosiveSound;
+    [SerializeField] private TextMeshProUGUI _instructionText;
+    [SerializeField] private GameObject _playButton;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -139,6 +138,7 @@ public class GameManager : SwipeDetection
         _gameOverSound.Play();
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.75f);
         _restartButton.SetActive(true);
+        _playButton.SetActive(true);
     }
 
     private void Update()
@@ -161,30 +161,15 @@ public class GameManager : SwipeDetection
         }
     }
 
-    private void SetScore(int score)
-    {
-        _board.Score = score;
-        _scoreText.text = "Score: " + _board.Score;
-        if (!PlayerPrefs.HasKey(StorageKeys.HIGH_SCORE))
-        {
-            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, score);
-        }
-
-        if (_board.Score > PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE))
-        {
-            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, _board.Score);
-            _highScoreText.text = "High Score: " + _board.Score;
-        }
-    }
-
     private void GenerateGrid()
     {
-        _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE, 0);
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         _restartButton.SetActive(false);
+        _playButton.SetActive(false);
         _round = 0;
         _nodes = new List<Node>();
         _blocks = new List<BaseBlock>();
+        _instructionText.SetText("Swipe DOWN to combine 2 blocks of the SAME value");
         for (int x = 0; x < _width; x++)
         {
             for (int y = 0; y < _height; y++)
@@ -192,25 +177,6 @@ public class GameManager : SwipeDetection
                 var node = Instantiate(_nodePrefab, new Vector2(x, y), Quaternion.identity);
                 _nodes.Add(node);
             }
-        }
-
-        if (_isTest)
-        {
-            SpawnBlock(GetNodeAtPosition(new Vector2(0, 0)), 2, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(0, 1)), 4, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(0, 2)), 8, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(0, 3)), 16, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(1, 3)), 32, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(2, 3)), 64, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(3, 2)), 256, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(3, 1)), 512, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(3, 0)), 1024, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(2, 0)), 2, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(1, 0)), 4096, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(1, 1)), 2, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(2, 2)), 8, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(1, 2)), 16, _blockPrefab);
-            SpawnBlock(GetNodeAtPosition(new Vector2(2, 1)), 2, _explosiveBlockPrefab);
         }
 
         var center = new Vector2((float)_width / 2 - 0.5f, (float)_height / 2 - 0.5f);
@@ -254,36 +220,32 @@ public class GameManager : SwipeDetection
         {
             if (_round++ == 0)
             {
-                _board = (Board)StorageHandler.LoadData(StorageKeys.BOARD);
-                if (!IsBoardValid())
-                {
-                    _board = new Board();
-                    SetScore(0);
-                    _board.ExplosiveValue = 2;
-                    var freeNode = freeNodes.First();
-                    SpawnBlock(freeNode, normalBlockValue, _blockPrefab);
-
-                    if (freeNodes.Count() > 1)
-                    {
-                        SpawnBlock(freeNodes.Skip(1).First(), _board.ExplosiveValue, _explosiveBlockPrefab);
-                    }
-                }
-                else
-                {
-                    SetScore(_board.Score);
-                    foreach (var block in _board.Blocks)
-                    {
-                        SpawnBlock(_nodes.First(n => (int)n.Pos.x == block.X && (int)n.Pos.y == block.Y), block.Value, block.IsExplosive ? _explosiveBlockPrefab : _blockPrefab);
-                    }
-                }
+                _board = new Board();
+                _board.ExplosiveValue = 2;
+                SpawnBlock(GetNodeAtPosition(new Vector2(0, 0)), 2, _blockPrefab);
+                SpawnBlock(GetNodeAtPosition(new Vector2(0, 1)), 2, _blockPrefab);
+                SpawnBlock(GetNodeAtPosition(new Vector2(2, 1)), 8, _blockPrefab);
+                SpawnBlock(GetNodeAtPosition(new Vector2(2, 0)), 4, _explosiveBlockPrefab);
             }
             else
             {
-                SpawnBlock(freeNodes.First(), normalBlockValue, _blockPrefab);
-                if (freeNodes.Count() > 1 && _blocks.All(b => b is Block))
+                if (_round == 2)
                 {
-                    _board.ExplosiveValue *= 2;
-                    SpawnBlock(freeNodes.Skip(1).First(), _board.ExplosiveValue, _explosiveBlockPrefab);
+                    SpawnBlock(GetNodeAtPosition(new Vector2(3, 0)), 2, _blockPrefab);
+                    _instructionText.SetText("The BLACK block is IMMOVABLE, try to combine it with another block of the SAME value by swiping RIGHT");
+                }
+
+                if (_round == 3)
+                {
+                    SpawnBlock(GetNodeAtPosition(new Vector2(2, 1)), 4, _blockPrefab);
+                    _instructionText.SetText("Now the BLACK block is EXPLOSIVE, swipe LEFT to see the effect");
+                }
+
+                if (_round == 4)
+                {
+                    SpawnBlock(GetNodeAtPosition(new Vector2(2, 1)), 2, _blockPrefab);
+                    SpawnBlock(GetNodeAtPosition(new Vector2(2, 3)), 8, _explosiveBlockPrefab);
+                    _instructionText.SetText("A new BLOCK block is spawned, its value is twice the original value of the previous EXPLODED BLACK block");
                 }
             }
         }
@@ -324,6 +286,22 @@ public class GameManager : SwipeDetection
     {
         if (_state != GameState.WaitingInput)
             return;
+
+        if (_round == 1 && dir != Vector2.down)
+            return;
+
+        if (_round == 2 && dir != Vector2.right)
+            return;
+
+        if (_round == 3 && dir != Vector2.left)
+            return;
+
+        if (_round == 4)
+        {
+            ChangeState(GameState.Lose);
+            _instructionText.SetText("Try to survive as many rounds as you can. Good luck!");
+            return;
+        }
 
         ChangeState(GameState.Moving);
         IEnumerable<BaseBlock> orderedBlocks = _blocks.Where(b => b is Block);
@@ -386,7 +364,6 @@ public class GameManager : SwipeDetection
     {
         if (baseBlock is Block)
         {
-            SetScore(_board.Score + baseBlock.Value * 2);
             SpawnBlock(baseBlock.Node, baseBlock.Value * 2, _blockPrefab);
             RemoveBlock(baseBlock);
             RemoveBlock(mergingBlock);
@@ -396,7 +373,6 @@ public class GameManager : SwipeDetection
             PlayCheeringText(false);
             if (baseBlock.Value / 2 > 1)
             {
-                SetScore(_board.Score + baseBlock.Value * 2);
                 SpawnBlock(baseBlock.Node, baseBlock.Value / 2, _explosiveBlockPrefab);
                 RemoveBlock(baseBlock);
                 RemoveBlock(mergingBlock);
@@ -419,7 +395,6 @@ public class GameManager : SwipeDetection
                         RemoveBlock(node.OccupiedBlock);
                     }
 
-                    SetScore(_board.Score + totalScore);
                     RemoveBlock(baseBlock);
                     ChangeState(GameState.SpawningBlocks);
                 });
@@ -473,61 +448,11 @@ public class GameManager : SwipeDetection
             RemoveBlock(_blocks.First());
         }
 
-        StorageHandler.DeleteData(StorageKeys.BOARD);
         ChangeState(GameState.GenerateLevel);
     }
 
     public void OnBackButtonClicked()
     {
-        if (_board != null)
-        {
-            _board.Blocks = _blocks.Select(block => new Board.Block()
-            {
-                X = (int)block.Pos.x,
-                Y = (int)block.Pos.y,
-                Value = block.Value,
-                IsExplosive = block is ExplosiveBlock,
-            }).ToList();
-
-            StorageHandler.SaveData(_board, StorageKeys.BOARD);
-        }
-
         SceneManager.LoadScene("MainMenu");
     }
-}
-
-[Serializable]
-public struct BlockType
-{
-    public int Value;
-    public Color Color;
-}
-
-public enum GameState
-{
-    GenerateLevel,
-    SpawningBlocks,
-    Explosing,
-    WaitingInput,
-    Moving,
-    Win,
-    Lose,
-}
-
-[Serializable]
-public class Board
-{
-    [Serializable]
-    public class Block
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Value { get; set; }
-        public bool IsExplosive { get; set; }
-    }
-
-    public List<Block> Blocks { get; set; } = new List<Block>();
-
-    public int Score { get; set; }
-    public int ExplosiveValue { get; set; }
 }
