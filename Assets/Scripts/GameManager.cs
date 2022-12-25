@@ -28,6 +28,7 @@ public class GameManager : SwipeDetection
     [SerializeField] private GameObject _cheeringText;
     [SerializeField] private AudioSource _gameOverSound;
     [SerializeField] private AudioSource _explosiveSound;
+    [SerializeField] private GameObject _rewindButton;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -35,6 +36,7 @@ public class GameManager : SwipeDetection
     private int _round;
     private BlockType GetBlockTypeByValue(int value) => _types.First(t => t.Value == value);
     private Board _board;
+    private StoredBoards _storedBoards;
     private bool _isCheeringTextPlaying = false;
     private readonly string[] _cheeringWords = new string[] {
         "Nice!",
@@ -58,8 +60,18 @@ public class GameManager : SwipeDetection
         "BANG!",
     };
 
+    private void AnimateButtons()
+    {
+        var sequence = DOTween.Sequence();
+        sequence.Append(_restartButton.transform.DOMoveY(_restartButton.transform.position.y + 10, 0.5f))
+            .Join(_rewindButton.transform.DOScale(1.1f, 0.5f))
+            .SetLoops(-1, LoopType.Yoyo)
+            ;
+    }
+
     void Start()
     {
+        AnimateButtons();
         ChangeState(GameState.GenerateLevel);
     }
 
@@ -138,7 +150,7 @@ public class GameManager : SwipeDetection
     {
         _gameOverSound.Play();
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.75f);
-        _restartButton.SetActive(true);
+        ShowButtonsWhenLose(true);
     }
 
     private void Update()
@@ -177,11 +189,36 @@ public class GameManager : SwipeDetection
         }
     }
 
+    private void ShowButtonsWhenLose(bool shown)
+    {
+        _restartButton.SetActive(shown);
+
+        if (shown)
+        {
+            _rewindButton.SetActive(_storedBoards.GetRewindedBoard() != null && _rewindButton.GetComponent<Button>().interactable);
+        }
+        else _rewindButton.SetActive(false);
+    }
+
+    public void Rewind()
+    {
+        if (_storedBoards == null)
+            return;
+
+        Board board = _storedBoards.GetRewindedBoard();
+        if (board == null)
+            return;
+
+        StorageHandler.SaveData(board, StorageKeys.BOARD);
+        SceneManager.LoadScene("Game");
+    }
+
     private void GenerateGrid()
     {
+        _storedBoards = new StoredBoards();
         _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE, 0);
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
-        _restartButton.SetActive(false);
+        ShowButtonsWhenLose(false);
         _round = 0;
         _nodes = new List<Node>();
         _blocks = new List<BaseBlock>();
@@ -249,7 +286,7 @@ public class GameManager : SwipeDetection
     private void SpawnBlocks()
     {
         var freeNodes = GetFreeNodes();
-        int normalBlockValue = UnityEngine.Random.value > 0.75f ? 4 : 2;
+        int normalBlockValue = UnityEngine.Random.value > 0.9f ? 4 : 2;
         if (freeNodes.Count() > 0)
         {
             if (_round++ == 0)
@@ -287,6 +324,9 @@ public class GameManager : SwipeDetection
                 }
             }
         }
+
+        SaveBlocksToBoard();
+        _storedBoards.SetBoard(_board.DeepClone());
 
         if (IsLoseState())
         {
@@ -477,18 +517,25 @@ public class GameManager : SwipeDetection
         ChangeState(GameState.GenerateLevel);
     }
 
+    private void SaveBlocksToBoard()
+    {
+        if (_board == null)
+            return;
+
+        _board.Blocks = _blocks.Select(block => new Board.Block()
+        {
+            X = (int)block.Pos.x,
+            Y = (int)block.Pos.y,
+            Value = block.Value,
+            IsExplosive = block is ExplosiveBlock,
+        }).ToList();
+    }
+
     public void OnBackButtonClicked()
     {
         if (_board != null)
         {
-            _board.Blocks = _blocks.Select(block => new Board.Block()
-            {
-                X = (int)block.Pos.x,
-                Y = (int)block.Pos.y,
-                Value = block.Value,
-                IsExplosive = block is ExplosiveBlock,
-            }).ToList();
-
+            SaveBlocksToBoard();
             StorageHandler.SaveData(_board, StorageKeys.BOARD);
         }
 
@@ -524,10 +571,59 @@ public class Board
         public int Y { get; set; }
         public int Value { get; set; }
         public bool IsExplosive { get; set; }
+
+        public Block DeepClone()
+        {
+            return new Block()
+            {
+                X = X,
+                Y = Y,
+                Value = Value,
+                IsExplosive = IsExplosive,
+            };
+        }
     }
 
     public List<Block> Blocks { get; set; } = new List<Block>();
 
     public int Score { get; set; }
     public int ExplosiveValue { get; set; }
+
+    public Board DeepClone()
+    {
+        return new Board()
+        {
+            Blocks = Blocks.Select(b => b.DeepClone()).ToList(),
+            Score = Score,
+            ExplosiveValue = ExplosiveValue,
+        };
+    }
+}
+
+[Serializable]
+public class StoredBoards
+{
+    public Queue<Board> Boards { get; set; } = new Queue<Board>();
+    public Board CurrentBoard { get; set; }
+
+    public void SetBoard(Board board, bool reset = false)
+    {
+        if (reset)
+            Boards.Clear();
+
+        CurrentBoard = board;
+        Boards.Enqueue(board);
+        if (Boards.Count == 6)
+        {
+            Boards.Dequeue();
+        }
+    }
+
+    public Board GetRewindedBoard()
+    {
+        if (Boards.Count != 5)
+            return null;
+
+        return Boards.First();
+    }
 }

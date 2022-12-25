@@ -18,8 +18,12 @@ public class Block : BaseBlock
     {
         ExplosionParticle.Play();
         _renderer.enabled = false;
-        Destroy(_text.gameObject);
+
+        if (_text.gameObject != null)
+            Destroy(_text.gameObject);
+
         yield return new WaitForSeconds(ExplosionParticle.main.startLifetime.constantMax);
-        Destroy(gameObject);
+        if (gameObject != null)
+            Destroy(gameObject);
     }
 }
