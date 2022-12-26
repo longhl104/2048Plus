@@ -22,13 +22,16 @@ public class GameManager : SwipeDetection
     [SerializeField] private float _travelTime = .2f;
     [SerializeField] private bool _isTest = false;
     [SerializeField] private TextMeshProUGUI _scoreText;
+    [SerializeField] private NumberCounterUpdater _scoreCounter;
     [SerializeField] private TextMeshProUGUI _highScoreText;
+    [SerializeField] private NumberCounterUpdater _highScoreCounter;
     [SerializeField] private GameObject _gamePanel;
     [SerializeField] private GameObject _restartButton;
     [SerializeField] private GameObject _cheeringText;
     [SerializeField] private AudioSource _gameOverSound;
     [SerializeField] private AudioSource _explosiveSound;
     [SerializeField] private RewardedAdsButton _rewindButton;
+    [SerializeField] private AudioSource _mergeSound;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -59,6 +62,7 @@ public class GameManager : SwipeDetection
         "BOOM!",
         "BANG!",
     };
+
 
     private void AnimateButtons()
     {
@@ -176,17 +180,22 @@ public class GameManager : SwipeDetection
     private void SetScore(int score)
     {
         _board.Score = score;
-        _scoreText.text = "Score: " + _board.Score;
+        if (_round <= 1) _scoreCounter.SetValueInstantly(PlayerPrefs.HasKey(StorageKeys.LAST_SCORE) ? PlayerPrefs.GetInt(StorageKeys.LAST_SCORE) : 0);
+        _scoreCounter.Value = score;
+
         if (!PlayerPrefs.HasKey(StorageKeys.HIGH_SCORE))
         {
             PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, score);
         }
 
-        if (_board.Score > PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE))
+        int highScore = PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE);
+        if (_board.Score > highScore)
         {
             PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, _board.Score);
-            _highScoreText.text = "High Score: " + _board.Score;
         }
+
+        _highScoreCounter.Value = highScore;
+        PlayerPrefs.SetInt(StorageKeys.LAST_SCORE, score);
     }
 
     private void ShowButtonsWhenLose(bool shown)
@@ -217,7 +226,7 @@ public class GameManager : SwipeDetection
     private void GenerateGrid()
     {
         _storedBoards = new StoredBoards();
-        _highScoreText.text = "High Score: " + PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE, 0);
+        //_highScoreText.text = "High Score: " + PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE, 0);
         _gamePanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         ShowButtonsWhenLose(false);
         _round = 0;
@@ -286,6 +295,7 @@ public class GameManager : SwipeDetection
 
     private void SpawnBlocks()
     {
+        _mergeSound.Play();
         var freeNodes = GetFreeNodes();
         int normalBlockValue = UnityEngine.Random.value > 0.9f ? 4 : 2;
         if (freeNodes.Count() > 0)
@@ -625,6 +635,6 @@ public class StoredBoards
         if (Boards.Count != 5)
             return null;
 
-        return Boards.First();
+        return Boards.Peek();
     }
 }
