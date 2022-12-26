@@ -28,7 +28,7 @@ public class GameManager : SwipeDetection
     [SerializeField] private GameObject _cheeringText;
     [SerializeField] private AudioSource _gameOverSound;
     [SerializeField] private AudioSource _explosiveSound;
-    [SerializeField] private GameObject _rewindButton;
+    [SerializeField] private RewardedAdsButton _rewindButton;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -191,13 +191,14 @@ public class GameManager : SwipeDetection
 
     private void ShowButtonsWhenLose(bool shown)
     {
-        _restartButton.SetActive(shown);
+        _restartButton.gameObject.SetActive(shown);
 
         if (shown)
         {
-            _rewindButton.SetActive(_storedBoards.GetRewindedBoard() != null && _rewindButton.GetComponent<Button>().interactable);
+            _rewindButton.LoadAd();
+            _rewindButton.gameObject.SetActive(_storedBoards.GetRewindedBoard() != null);
         }
-        else _rewindButton.SetActive(false);
+        else _rewindButton.gameObject.SetActive(false);
     }
 
     public void Rewind()

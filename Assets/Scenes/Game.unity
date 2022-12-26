@@ -468,7 +468,7 @@ MonoBehaviour:
   _cheeringText: {fileID: 2193193416290760154, guid: 7ef7f8878c9e21640bf821a05da89cab, type: 3}
   _gameOverSound: {fileID: 317003821}
   _explosiveSound: {fileID: 6204926}
-  _rewindButton: {fileID: 1120514512}
+  _rewindButton: {fileID: 1120514518}
 --- !u!4 &317003818
 Transform:
   m_ObjectHideFlags: 0
@@ -602,6 +602,10 @@ PrefabInstance:
     - target: {fileID: 5010583436646532898, guid: b24b1669e84fc424faf52a3e769f5f90, type: 3}
       propertyPath: text
       value: Rewind 5 rounds
+      objectReference: {fileID: 0}
+    - target: {fileID: 5010583436646532898, guid: b24b1669e84fc424faf52a3e769f5f90, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6872509642596694033, guid: b24b1669e84fc424faf52a3e769f5f90, type: 3}
       propertyPath: m_Pivot.x
@@ -1278,7 +1282,6 @@ MonoBehaviour:
   _androidGameId: 5083071
   _iOSGameId: 5083070
   _testMode: 1
-  _rewardedAdsButton: {fileID: 1120514518}
 --- !u!4 &1899168304
 Transform:
   m_ObjectHideFlags: 0
