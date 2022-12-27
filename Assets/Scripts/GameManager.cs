@@ -191,7 +191,8 @@ public class GameManager : SwipeDetection
         int highScore = PlayerPrefs.GetInt(StorageKeys.HIGH_SCORE);
         if (_board.Score > highScore)
         {
-            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, _board.Score);
+            PlayerPrefs.SetInt(StorageKeys.HIGH_SCORE, score);
+            highScore = score;
         }
 
         _highScoreCounter.Value = highScore;
@@ -544,6 +545,9 @@ public class GameManager : SwipeDetection
 
     public void OnBackButtonClicked()
     {
+        if (_state != GameState.WaitingInput)
+            return;
+
         if (_board != null)
         {
             SaveBlocksToBoard();
