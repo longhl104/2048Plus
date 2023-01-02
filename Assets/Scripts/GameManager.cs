@@ -32,6 +32,8 @@ public class GameManager : SwipeDetection
     [SerializeField] private AudioSource _explosiveSound;
     [SerializeField] private RewardedAdsButton _rewindButton;
     [SerializeField] private AudioSource _mergeSound;
+    [SerializeField] private float _idleTime = 15f;
+    [SerializeField] private SwipeInstruction _swipeInstruction;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -41,6 +43,7 @@ public class GameManager : SwipeDetection
     private Board _board;
     private StoredBoards _storedBoards;
     private bool _isCheeringTextPlaying = false;
+    private float _lastIdleTime;
     private readonly string[] _cheeringWords = new string[] {
         "Nice!",
         "Amazing!",
@@ -133,6 +136,7 @@ public class GameManager : SwipeDetection
                 break;
 
             case GameState.WaitingInput:
+                WaitForInput();
                 break;
 
             case GameState.Moving:
@@ -150,6 +154,11 @@ public class GameManager : SwipeDetection
         }
     }
 
+    private void WaitForInput()
+    {
+
+    }
+
     private void ShowGameOver()
     {
         _gameOverSound.Play();
@@ -157,8 +166,41 @@ public class GameManager : SwipeDetection
         ShowButtonsWhenLose(true);
     }
 
+    private List<Vector2> GetAvailableSwipeDirections()
+    {
+        Vector2[] directions = new Vector2[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+
+        return directions.Where(direction =>
+        {
+            return _blocks.Any(block =>
+            {
+                if (block is ExplosiveBlock)
+                    return false;
+
+                Node otherNode = GetNodeAtPosition(block.Pos + direction);
+                if (otherNode == null)
+                {
+                    return false;
+                }
+
+                return otherNode.OccupiedBlock == null
+                    || block.Value == otherNode.OccupiedBlock.Value
+                    ;
+            });
+        }).ToList();
+    }
+
     private void Update()
     {
+        if (_state == GameState.WaitingInput)
+        {
+            if (!_swipeInstruction.IsPlaying() && Time.time - _lastIdleTime > _idleTime)
+            {
+                var directions = GetAvailableSwipeDirections();
+                _swipeInstruction.Swipe(directions.OrderBy(x => UnityEngine.Random.value).First());
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             SwipeUpEvent();
@@ -377,6 +419,8 @@ public class GameManager : SwipeDetection
         if (_state != GameState.WaitingInput)
             return;
 
+        _lastIdleTime = Time.time;
+        _swipeInstruction.Stop();
         ChangeState(GameState.Moving);
         IEnumerable<BaseBlock> orderedBlocks = _blocks.Where(b => b is Block);
         if (dir == Vector2.up)

@@ -27,6 +27,7 @@ public class InstructionGameManager : SwipeDetection
     [SerializeField] private AudioSource _explosiveSound;
     [SerializeField] private TextMeshProUGUI _instructionText;
     [SerializeField] private GameObject _playButton;
+    [SerializeField] private SwipeInstruction _swipeInstruction;
 
     private List<Node> _nodes;
     private List<BaseBlock> _blocks;
@@ -143,6 +144,27 @@ public class InstructionGameManager : SwipeDetection
 
     private void Update()
     {
+        if (!_swipeInstruction.IsPlaying())
+        {
+            switch (_round)
+            {
+                case 1:
+                    _swipeInstruction.Swipe(Vector2.down);
+                    break;
+
+                case 2:
+                    _swipeInstruction.Swipe(Vector2.right);
+                    break;
+
+                case 3:
+                    _swipeInstruction.Swipe(Vector2.left);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             SwipeUpEvent();
@@ -298,11 +320,13 @@ public class InstructionGameManager : SwipeDetection
 
         if (_round == 4)
         {
+            _swipeInstruction.Stop();
             ChangeState(GameState.Lose);
             _instructionText.SetText("Try to survive as many rounds as you can. Good luck!");
             return;
         }
 
+        _swipeInstruction.Stop();
         ChangeState(GameState.Moving);
         IEnumerable<BaseBlock> orderedBlocks = _blocks.Where(b => b is Block);
         if (dir == Vector2.up)
