@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -7,11 +8,12 @@ public class Block : BaseBlock
 {
     public ParticleSystem ExplosionParticle;
 
-    public override void Init(BlockType type)
+    public override void Init(BlockType? type)
     {
         base.Init(type);
         ParticleSystem.MainModule psmain = ExplosionParticle.main;
-        psmain.startColor = type.Color;
+        if (type.HasValue)
+            psmain.startColor = type.Value.Color;
     }
 
     public IEnumerator Destroy()

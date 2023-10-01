@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -12,12 +13,36 @@ public abstract class BaseBlock : MonoBehaviour
     public Node Node;
     public BaseBlock MergingBlock;
     public bool Merging;
+    private Sequence _sequence;
 
-    public virtual void Init(BlockType type)
+    public virtual void Init(BlockType? type)
     {
-        Value = type.Value;
-        _renderer.color = type.Color;
-        _text.text = type.Value.ToString();
+        if (type.HasValue)
+        {
+            Value = type.Value.Value;
+            _renderer.color = type.Value.Color;
+            _text.text = type.Value.Value.ToString();
+        }
+    }
+
+    public void TriggerExplosion()
+    {
+        _sequence = DOTween.Sequence()
+            .Append(_renderer.transform.DOScale(new Vector2(1.1f, 1.1f), 0.1f))
+            .Append(_renderer.transform.DOScale(new Vector2(0.9f, 0.9f), 0.1f))
+            .SetLoops(10)
+            .OnComplete(() =>
+            {
+                _sequence = DOTween.Sequence()
+                    .Append(_renderer.transform.DOScale(new Vector2(1.0f, 1.0f), 0.1f))
+                    .Join(_renderer.transform.DOShakeRotation(0.5f, 45))
+                    ;
+            });
+    }
+
+    public void ClearText()
+    {
+        _text.text = "";
     }
 
     public void SetBlock(Node node)

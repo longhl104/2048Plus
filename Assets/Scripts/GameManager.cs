@@ -39,7 +39,7 @@ public class GameManager : SwipeDetection
     private List<BaseBlock> _blocks;
     private GameState _state;
     private int _round;
-    private BlockType GetBlockTypeByValue(int value) => _types.First(t => t.Value == value);
+    private BlockType GetBlockTypeByValue(int? value) => _types.SingleOrDefault(t => t.Value == value);
     private Board _board;
     private StoredBoards _storedBoards;
     private bool _isCheeringTextPlaying = false;
@@ -391,12 +391,17 @@ public class GameManager : SwipeDetection
         ChangeState(GameState.WaitingInput);
     }
 
-    void SpawnBlock(Node node, int value, BaseBlock blockPrefab)
+    BaseBlock SpawnBlock(Node node, int? value, BaseBlock blockPrefab)
     {
         var block = Instantiate(blockPrefab, node.Pos, Quaternion.identity);
         block.Init(GetBlockTypeByValue(value));
         block.SetBlock(node);
         _blocks.Add(block);
+
+        if (!value.HasValue)
+            block.ClearText();
+
+        return block;
     }
 
     private bool IsLoseState()
@@ -503,13 +508,28 @@ public class GameManager : SwipeDetection
                 RemoveBlock(mergingBlock);
                 ExplosiveBlock eb = (ExplosiveBlock)baseBlock;
                 ChangeState(GameState.Explosing);
+
+                foreach (var node in GetRemovedNodes(baseBlock, false))
+                {
+                    if (node.OccupiedBlock == null)
+                    {
+                        var block = (ExplosiveBlock)SpawnBlock(node, null, _explosiveBlockPrefab);
+                        block.TriggerExplosion(() =>
+                        {
+                            RemoveBlock(block);
+                        });
+                    }
+                    else
+                    {
+                        node.OccupiedBlock.TriggerExplosion();
+                    }
+                }
+
                 eb.TriggerExplosion(() =>
                 {
                     PlayCheeringText(true);
                     var totalScore = 0;
-                    foreach (var node in _nodes.Where(n => n.OccupiedBlock != null
-                         && Math.Max(Math.Abs(n.Pos.x - baseBlock.Pos.x), Math.Abs(n.Pos.y - baseBlock.Pos.y)) <= 1
-                        ))
+                    foreach (var node in GetRemovedNodes(baseBlock, true))
                     {
                         totalScore += node.OccupiedBlock.Value;
                         RemoveBlock(node.OccupiedBlock);
@@ -521,6 +541,33 @@ public class GameManager : SwipeDetection
                 });
             }
         }
+    }
+
+    private IEnumerable<Node> GetRemovedNodes(BaseBlock baseBlock, bool isOccupied)
+    {
+        int strategy = UnityEngine.Random.Range(1, 4);
+        //int strategy = 1;
+        switch (strategy)
+        {
+            case 1: // Destroy all surrouding blocks
+                return _nodes.Where(n => (!isOccupied || n.OccupiedBlock != null)
+                         && Math.Max(Math.Abs(n.Pos.x - baseBlock.Pos.x), Math.Abs(n.Pos.y - baseBlock.Pos.y)) == 1
+                        );
+
+            case 2: // Destroy in diagonal cross way
+                return _nodes.Where(n => (!isOccupied || n.OccupiedBlock != null)
+                         && Math.Abs(n.Pos.x - baseBlock.Pos.x) == Math.Abs(n.Pos.y - baseBlock.Pos.y)
+                        );
+
+            case 3: // Destroy in cross way
+                return _nodes.Where(n => (!isOccupied || n.OccupiedBlock != null)
+                         && (n.Pos.x == baseBlock.Pos.x || n.Pos.y == baseBlock.Pos.y)
+                        );
+
+            default:
+                throw new Exception("Unreached Exception");
+        }
+
     }
 
     void RemoveBlock(BaseBlock block)
