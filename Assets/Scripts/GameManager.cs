@@ -509,7 +509,8 @@ public class GameManager : SwipeDetection
                 ExplosiveBlock eb = (ExplosiveBlock)baseBlock;
                 ChangeState(GameState.Explosing);
 
-                foreach (var node in GetRemovedNodes(baseBlock, false))
+                var removedNodes = GetRemovedNodes(baseBlock, false);
+                foreach (var node in removedNodes)
                 {
                     if (node.OccupiedBlock == null)
                     {
@@ -529,10 +530,13 @@ public class GameManager : SwipeDetection
                 {
                     PlayCheeringText(true);
                     var totalScore = 0;
-                    foreach (var node in GetRemovedNodes(baseBlock, true))
+                    foreach (var node in removedNodes)
                     {
-                        totalScore += node.OccupiedBlock.Value;
-                        RemoveBlock(node.OccupiedBlock);
+                        if (node.OccupiedBlock != null)
+                        {
+                            totalScore += node.OccupiedBlock.Value;
+                            RemoveBlock(node.OccupiedBlock);
+                        }
                     }
 
                     SetScore(_board.Score + totalScore);
